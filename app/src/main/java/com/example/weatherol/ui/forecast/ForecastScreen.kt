@@ -165,9 +165,12 @@ fun DailyForecastSection(dailyList: List<DailyForecast>) {
             dailyList.forEachIndexed { index, forecast ->
                 DailyForecastItem(forecast)
                 if (index != dailyList.lastIndex) {
-                    Divider(
-                        color = Color(0xFFE2E8F0),
-                        modifier = Modifier.padding(vertical = 8.dp)
+                    Box(
+                        modifier = Modifier
+                            .padding(vertical = 8.dp)
+                            .fillMaxWidth()
+                            .height(1.dp) // 线条粗细
+                            .background(Color(0xFFE2E8F0)) // 线条颜色
                     )
                 }
             }
