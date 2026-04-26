@@ -9,6 +9,6 @@ import androidx.compose.ui.Modifier
 @Composable
 fun ForecastScreen() {
     Column(modifier = Modifier.fillMaxSize()) {
-        Text(text = "预报页 - 组员2开发")
+        Text(text = "预报页 - 组员2开发cnm")
     }
 }
