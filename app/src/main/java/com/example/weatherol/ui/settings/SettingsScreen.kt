@@ -100,7 +100,7 @@ fun SettingsScreen(navController: NavController) {
                     icon = Icons.Default.Info,
                     title = "关于我们",
                     subtitle = "版本 1.0.0",
-                    onClick = { /* 跳转关于页面 */ }
+                    onClick = { navController.navigate("about") }
                 )
             }
             item {
@@ -116,7 +116,7 @@ fun SettingsScreen(navController: NavController) {
                     icon = Icons.Default.Build,
                     title = "帮助与反馈",
                     subtitle = "问题反馈和使用帮助",
-                    onClick = { /* 跳转帮助页面 */ }
+                    onClick = { navController.navigate("help") }
                 )
             }
 
