@@ -7,35 +7,23 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.LocationOn
+import androidx.compose.material.icons.filled.List
+import androidx.compose.material.icons.filled.Place
 import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material3.Icon
-import androidx.compose.material3.NavigationBar
-import androidx.compose.material3.NavigationBarItem
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.vector.ImageVector
 import com.example.weatherol.ui.city.CityScreen
 import com.example.weatherol.ui.forecast.ForecastScreen
 import com.example.weatherol.ui.home.HomeScreen
-import com.example.weatherol.ui.settings.SettingsScreen
-import com.example.weatherol.ui.theme.WeatherolTheme
+import com.example.weatherol.ui.setting.SettingScreen
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
-            WeatherolTheme {
+            MaterialTheme {
                 Surface(modifier = Modifier.fillMaxSize()) {
                     MainScreen()
                 }
@@ -46,45 +34,48 @@ class MainActivity : ComponentActivity() {
 
 @Composable
 fun MainScreen() {
+    var selectedIndex by remember { mutableStateOf(0) }
+
+    // ✅ 顺序完全按你要求：首页 → 预报 → 城市 → 设置
     val items = listOf(
-        NavItem("首页", Icons.Default.Home),
-        NavItem("预报", Icons.Default.LocationOn),
-        NavItem("城市", Icons.Default.Add),
-        NavItem("设置", Icons.Default.Settings)
+        "首页" to Icons.Default.Home,
+        "预报" to Icons.Default.List,
+        "城市" to Icons.Default.Place,
+        "设置" to Icons.Default.Settings
     )
 
-    var selected by remember { mutableIntStateOf(0) }
-    // 👇 这两行就是你缺失的城市状态变量
     var selectedLat by remember { mutableStateOf(39.9042) }
     var selectedLon by remember { mutableStateOf(116.4074) }
 
     Scaffold(
         bottomBar = {
             NavigationBar {
-                items.forEachIndexed { i, it ->
+                items.forEachIndexed { index, item ->
                     NavigationBarItem(
-                        selected = selected == i,
-                        onClick = { selected = i },
-                        icon = { Icon(it.icon, it.label) },
-                        label = { Text(it.label) }
+                        icon = { Icon(item.second, null) },
+                        label = { Text(item.first) },
+                        selected = selectedIndex == index,
+                        onClick = { selectedIndex = index },
+                        colors = NavigationBarItemDefaults.colors(
+                            selectedIconColor = AppState.themeColor.value,
+                            selectedTextColor = AppState.themeColor.value
+                        )
                     )
                 }
             }
         }
-    ) { pad ->
-        Box(Modifier.fillMaxSize().padding(pad)) {
-            when (selected) {
-                0 -> HomeScreen(latitude = selectedLat, longitude = selectedLon)
-                1 -> ForecastScreen(latitude = selectedLat, longitude = selectedLon)
-                2 -> CityScreen { _, lat, lon ->
+    ) { padding ->
+        Box(modifier = Modifier.padding(padding)) {
+            when (selectedIndex) {
+                0 -> HomeScreen(selectedLat, selectedLon)      // 1. 首页
+                1 -> ForecastScreen(selectedLat, selectedLon)  // 2. 预报
+                2 -> CityScreen { _, lat, lon ->               // 3. 城市
                     selectedLat = lat
                     selectedLon = lon
-                    selected = 0 // 选完城市自动切回首页
+                    selectedIndex = 0 // 选完城市 → 自动跳回首页
                 }
-                3 -> SettingsScreen()
+                3 -> SettingScreen()                           // 4. 设置
             }
         }
     }
 }
-
-data class NavItem(val label: String, val icon: ImageVector)

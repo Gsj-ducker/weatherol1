@@ -18,6 +18,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.weatherol.AppState
 import com.example.weatherol.data.common.DataResult
 import com.example.weatherol.data.remote.model.WeatherResponse
 import com.example.weatherol.data.repository.WeatherRepository
@@ -46,7 +47,8 @@ fun HomeScreen(
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier.padding(top = 20.dp)
         ) {
-            Icon(Icons.Default.LocationOn, null, tint = Color(0xFF6495ED))
+            // 主题颜色自动跟着设置变
+            Icon(Icons.Default.LocationOn, null, tint = AppState.themeColor.value)
             Spacer(Modifier.width(6.dp))
             Text("当前天气", fontSize = 22.sp, fontWeight = FontWeight.Bold)
         }
@@ -56,7 +58,23 @@ fun HomeScreen(
         when (val state = weatherState) {
             is DataResult.Success -> {
                 val current = state.data.current
-                Text("${current?.temperature2m}°", fontSize = 64.sp, fontWeight = FontWeight.Bold, color = Color(0xFF2980B9))
+                val temp = current?.temperature2m ?: 0.0
+
+                // ✅ 温度自动根据全局单位切换
+                val displayTemp = if (AppState.isCelsius.value) {
+                    "${temp.toInt()} ℃"
+                } else {
+                    "${(temp * 1.8 + 32).toInt()} ℉"
+                }
+
+                // ✅ 温度颜色自动跟随主题
+                Text(
+                    displayTemp,
+                    fontSize = 64.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = AppState.themeColor.value
+                )
+
                 Spacer(Modifier.height(10.dp))
                 Text(getWeatherText(current?.weatherCode), fontSize = 24.sp, color = Color.Gray)
                 Spacer(Modifier.height(40.dp))
@@ -72,7 +90,10 @@ fun HomeScreen(
                 }
             }
             is DataResult.Error -> Text("加载失败: ${state.message}", color = Color.Red)
-            else -> CircularProgressIndicator()
+            else -> CircularProgressIndicator(
+                // 加载圈也变色
+                color = AppState.themeColor.value
+            )
         }
     }
 }
@@ -97,15 +118,15 @@ fun WeatherInfoCard(title: String, value: String) {
     ) {
         Column(
             modifier = Modifier.fillMaxSize(),
-            verticalArrangement = Arrangement.Center, // 正确的参数：垂直居中
-            horizontalAlignment = Alignment.CenterHorizontally // 正确的参数：水平居中
+            verticalArrangement = Arrangement.Center,
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Text(
                 text = title,
                 color = Color.Gray,
                 fontSize = 14.sp
             )
-            Spacer(modifier = Modifier.height(6.dp))
+            Spacer(Modifier.height(6.dp))
             Text(
                 text = value,
                 fontSize = 18.sp,

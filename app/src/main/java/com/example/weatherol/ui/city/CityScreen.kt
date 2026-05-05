@@ -25,6 +25,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.weatherol.AppState
 import com.example.weatherol.data.common.DataResult
 import com.example.weatherol.data.remote.model.CityGeo
 import com.example.weatherol.data.repository.WeatherRepository
@@ -84,7 +85,7 @@ fun CityScreen(
             "城市管理",
             fontSize = 28.sp,
             fontWeight = FontWeight.Bold,
-            color = Color(0xFF0F172A)
+            color = AppState.themeColor.value
         )
 
         Spacer(Modifier.height(16.dp))
@@ -93,7 +94,7 @@ fun CityScreen(
             value = searchText,
             onValueChange = { searchText = it },
             placeholder = { Text("搜索城市") },
-            leadingIcon = { Icon(Icons.Default.Search, null) },
+            leadingIcon = { Icon(Icons.Default.Search, null, tint = AppState.themeColor.value) },
             modifier = Modifier
                 .fillMaxWidth()
                 .clip(RoundedCornerShape(16.dp))
@@ -135,7 +136,7 @@ fun CityScreen(
                 .fillMaxWidth()
                 .height(56.dp)
                 .clip(RoundedCornerShape(16.dp)),
-            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF0284C7))
+            colors = ButtonDefaults.buttonColors(containerColor = AppState.themeColor.value)
         ) {
             if (isLoading) {
                 CircularProgressIndicator(
@@ -164,7 +165,7 @@ fun CityScreen(
             "已添加城市 (${filteredList.size})",
             fontSize = 18.sp,
             fontWeight = FontWeight.Medium,
-            color = Color(0xFF334155)
+            color = AppState.themeColor.value
         )
 
         Spacer(Modifier.height(12.dp))
@@ -217,7 +218,7 @@ fun WeatherCityCard(
                     city.name,
                     fontSize = 20.sp,
                     fontWeight = FontWeight.SemiBold,
-                    color = Color(0xFF1E293B),
+                    color = AppState.themeColor.value,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
@@ -231,7 +232,7 @@ fun WeatherCityCard(
             Text(
                 "📍",
                 fontSize = 24.sp,
-                color = Color(0xFF0284C7)
+                color = AppState.themeColor.value
             )
 
             Spacer(Modifier.width(8.dp))
@@ -264,6 +265,6 @@ fun WeatherIcon(type: WeatherType) {
             .background(bgColor),
         contentAlignment = Alignment.Center
     ) {
-        Text(text = icon, fontSize = 28.sp)
+        Text(text = icon, fontSize = 28.sp, color = AppState.themeColor.value)
     }
 }
