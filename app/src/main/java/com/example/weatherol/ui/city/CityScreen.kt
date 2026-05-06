@@ -25,40 +25,49 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.weatherol.AppState
+import com.example.weatherol.data.common.DataResult
+import com.example.weatherol.data.remote.model.CityGeo
+import com.example.weatherol.data.repository.WeatherRepository
+import kotlinx.coroutines.launch
 
-enum class WeatherType {
-    SUNNY, CLOUDY, RAINY, SNOWY
-}
+enum class WeatherType { SUNNY, CLOUDY, RAINY, SNOWY }
 
-data class City(
+data class LocalCity(
     val id: Int,
     val name: String,
-    val temperature: String = "23℃",
-    val weatherType: WeatherType = WeatherType.CLOUDY,
-    val weatherText: String = "多云"
+    val latitude: Double,
+    val longitude: Double
 )
 
 @Composable
-fun CityScreen() {
-    val cityList = remember {
-        mutableStateListOf(
-            City(1, "北京"),
-            City(2, "上海"),
-            City(3, "广州"),
-            City(4, "深圳"),
-            City(5, "杭州"),
-            City(6, "成都"),
-            City(7, "重庆"),
-            City(8, "武汉"),
-            City(9, "西安"),
-            City(10, "南京"),
-            City(11, "天津"),
-            City(12, "苏州"),
-            City(13, "乌鲁木齐")
-        )
-    }
+fun CityScreen(
+    onCitySelected: (String, Double, Double) -> Unit
+) {
+    val repo = remember { WeatherRepository() }
+    val scope = rememberCoroutineScope()
 
     var searchText by remember { mutableStateOf("") }
+    var isLoading by remember { mutableStateOf(false) }
+    var errorMsg by remember { mutableStateOf("") }
+
+    val cityList = remember {
+        mutableStateListOf(
+            LocalCity(1, "北京", 39.9042, 116.4074),
+            LocalCity(2, "上海", 31.2304, 121.4737),
+            LocalCity(3, "广州", 23.1291, 113.2644),
+            LocalCity(4, "深圳", 22.5431, 114.0579),
+            LocalCity(5, "杭州", 30.2741, 120.1551),
+            LocalCity(6, "成都", 30.5723, 104.0665),
+            LocalCity(7, "重庆", 29.5630, 106.5516),
+            LocalCity(8, "武汉", 30.5928, 114.3055),
+            LocalCity(9, "西安", 33.4219, 108.9398),
+            LocalCity(10, "南京", 32.0603, 118.7969),
+            LocalCity(11, "天津", 39.0842, 117.2010),
+            LocalCity(12, "苏州", 31.2987, 120.5843),
+            LocalCity(13, "乌鲁木齐", 43.8256, 87.6169)
+        )
+    }
 
     val filteredList = remember(searchText, cityList) {
         if (searchText.isBlank()) cityList
@@ -69,13 +78,14 @@ fun CityScreen() {
         modifier = Modifier
             .fillMaxSize()
             .background(Brush.verticalGradient(listOf(Color(0xFFF0F9FF), Color(0xFFE0F2FE))))
-            .padding(20.dp)
+            .padding(20.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Text(
             "城市管理",
             fontSize = 28.sp,
             fontWeight = FontWeight.Bold,
-            color = Color(0xFF0F172A)
+            color = AppState.themeColor.value
         )
 
         Spacer(Modifier.height(16.dp))
@@ -84,7 +94,7 @@ fun CityScreen() {
             value = searchText,
             onValueChange = { searchText = it },
             placeholder = { Text("搜索城市") },
-            leadingIcon = { Icon(Icons.Default.Search, null) },
+            leadingIcon = { Icon(Icons.Default.Search, null, tint = AppState.themeColor.value) },
             modifier = Modifier
                 .fillMaxWidth()
                 .clip(RoundedCornerShape(16.dp))
@@ -94,21 +104,59 @@ fun CityScreen() {
 
         Button(
             onClick = {
-                val newCity = City(
-                    id = cityList.size + 1,
-                    name = "新城市${cityList.size + 1}"
-                )
-                cityList.add(newCity)
+                if (searchText.isNotBlank()) {
+                    scope.launch {
+                        isLoading = true
+                        val result = repo.getCityGeoByName(searchText)
+                        isLoading = false
+                        when (result) {
+                            is DataResult.Success -> {
+                                val geo = result.data
+                                if (!cityList.any { it.name == geo.cityName }) {
+                                    cityList.add(
+                                        LocalCity(
+                                            id = cityList.size + 1,
+                                            name = geo.cityName,
+                                            latitude = geo.latitude,
+                                            longitude = geo.longitude
+                                        )
+                                    )
+                                }
+                                errorMsg = ""
+                            }
+                            is DataResult.Error -> {
+                                errorMsg = result.message ?: "添加失败"
+                            }
+                            else -> Unit
+                        }
+                    }
+                }
             },
             modifier = Modifier
                 .fillMaxWidth()
                 .height(56.dp)
                 .clip(RoundedCornerShape(16.dp)),
-            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF0284C7))
+            colors = ButtonDefaults.buttonColors(containerColor = AppState.themeColor.value)
         ) {
-            Icon(Icons.Default.Add, null)
-            Spacer(Modifier.width(8.dp))
-            Text("添加城市", fontSize = 16.sp)
+            if (isLoading) {
+                CircularProgressIndicator(
+                    modifier = Modifier.size(24.dp),
+                    color = Color.White,
+                    strokeWidth = 2.dp
+                )
+            } else {
+                Icon(Icons.Default.Add, null)
+                Spacer(Modifier.width(8.dp))
+                Text("添加搜索城市", fontSize = 16.sp)
+            }
+        }
+
+        if (errorMsg.isNotEmpty()) {
+            Text(
+                text = errorMsg,
+                color = Color.Red,
+                modifier = Modifier.padding(top = 8.dp)
+            )
         }
 
         Spacer(Modifier.height(24.dp))
@@ -117,17 +165,22 @@ fun CityScreen() {
             "已添加城市 (${filteredList.size})",
             fontSize = 18.sp,
             fontWeight = FontWeight.Medium,
-            color = Color(0xFF334155)
+            color = AppState.themeColor.value
         )
 
         Spacer(Modifier.height(12.dp))
 
-        LazyColumn(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+        LazyColumn(
+            verticalArrangement = Arrangement.spacedBy(16.dp),
+            modifier = Modifier.fillMaxSize()
+        ) {
             items(filteredList, key = { it.id }) { city ->
                 AnimatedVisibility(visible = true, enter = fadeIn(), exit = fadeOut()) {
-                    WeatherCityCard(city) {
-                        cityList.remove(city)
-                    }
+                    WeatherCityCard(
+                        city = city,
+                        onDelete = { cityList.remove(city) },
+                        onCitySelected = onCitySelected
+                    )
                 }
             }
         }
@@ -135,12 +188,18 @@ fun CityScreen() {
 }
 
 @Composable
-fun WeatherCityCard(city: City, onDelete: () -> Unit) {
+fun WeatherCityCard(
+    city: LocalCity,
+    onDelete: () -> Unit,
+    onCitySelected: (String, Double, Double) -> Unit
+) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(24.dp))
-            .clickable { },
+            .clickable {
+                onCitySelected(city.name, city.latitude, city.longitude)
+            },
         elevation = CardDefaults.cardElevation(6.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White)
     ) {
@@ -151,7 +210,7 @@ fun WeatherCityCard(city: City, onDelete: () -> Unit) {
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            WeatherIcon(city.weatherType)
+            WeatherIcon(WeatherType.CLOUDY)
             Spacer(Modifier.width(16.dp))
 
             Column(Modifier.weight(1f)) {
@@ -159,22 +218,21 @@ fun WeatherCityCard(city: City, onDelete: () -> Unit) {
                     city.name,
                     fontSize = 20.sp,
                     fontWeight = FontWeight.SemiBold,
-                    color = Color(0xFF1E293B),
+                    color = AppState.themeColor.value,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
                 Text(
-                    city.weatherText,
+                    "已同步真实坐标",
                     fontSize = 14.sp,
                     color = Color(0xFF64748B)
                 )
             }
 
             Text(
-                city.temperature,
+                "📍",
                 fontSize = 24.sp,
-                fontWeight = FontWeight.Bold,
-                color = Color(0xFF0284C7)
+                color = AppState.themeColor.value
             )
 
             Spacer(Modifier.width(8.dp))
@@ -207,6 +265,6 @@ fun WeatherIcon(type: WeatherType) {
             .background(bgColor),
         contentAlignment = Alignment.Center
     ) {
-        Text(text = icon, fontSize = 28.sp)
+        Text(text = icon, fontSize = 28.sp, color = AppState.themeColor.value)
     }
 }

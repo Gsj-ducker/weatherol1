@@ -1,17 +1,43 @@
 package com.example.weatherol.data.remote.model
-
+//页面拿到这些类，就能拿到所有天气数据。
 import com.google.gson.annotations.SerializedName
 
+// 顶层响应
 data class WeatherResponse(
-    @SerializedName("latitude") val latitude: Double,
-    @SerializedName("longitude") val longitude: Double,
-    @SerializedName("timezone") val timezone: String,
-    @SerializedName("current") val current: CurrentWeatherDto?
+    @SerializedName("current") val current: Current?,
+    @SerializedName("hourly") val hourly: Hourly?,
+    @SerializedName("daily") val daily: Daily?
 )
 
-data class CurrentWeatherDto(
-    @SerializedName("time") val time: String,
-    @SerializedName("temperature_2m") val temperature2m: Double,
-    @SerializedName("relative_humidity_2m") val relativeHumidity2m: Int?,
-    @SerializedName("weather_code") val weatherCode: Int?
+// 当前天气
+data class Current(
+    @SerializedName("temperature_2m") val temperature2m: Double?,//把JSON里的temperature_2m装进Kotlin的temperature2m
+    @SerializedName("weather_code") val weatherCode: Int?,
+    @SerializedName("relative_humidity_2m") val relativeHumidity2m: Int?
+)
+
+// 逐小时
+data class Hourly(
+    @SerializedName("time") val time: List<String>?,
+    @SerializedName("temperature_2m") val temperature2m: List<Double>?,
+    @SerializedName("weather_code") val weatherCode: List<Int>?
+)
+
+// 逐日
+data class Daily(
+    @SerializedName("time") val time: List<String>?,
+    @SerializedName("weather_code") val weatherCode: List<Int>?,
+    @SerializedName("temperature_2m_max") val temperature2mMax: List<Double>?,
+    @SerializedName("temperature_2m_min") val temperature2mMin: List<Double>?
+)
+
+// 城市搜索
+data class GeocodingResponse(
+    @SerializedName("results") val results: List<GeocodingResult>?
+)
+
+data class GeocodingResult(
+    @SerializedName("name") val name: String,
+    @SerializedName("latitude") val latitude: Double,
+    @SerializedName("longitude") val longitude: Double
 )

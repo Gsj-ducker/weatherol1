@@ -7,37 +7,24 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.List
+import androidx.compose.material.icons.filled.Place
 import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material.icons.filled.LocationOn
-import androidx.compose.material3.Icon
-import androidx.compose.material3.NavigationBar
-import androidx.compose.material3.NavigationBarItem
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.vector.ImageVector
 import com.example.weatherol.ui.city.CityScreen
 import com.example.weatherol.ui.forecast.ForecastScreen
 import com.example.weatherol.ui.home.HomeScreen
-import com.example.weatherol.ui.settings.SettingsScreen
-import com.example.weatherol.ui.theme.WeatherolTheme
+import com.example.weatherol.ui.setting.SettingScreen
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
-            WeatherolTheme {
-                Surface(
-                    modifier = Modifier.fillMaxSize(),
-                ) {
+            MaterialTheme {
+                Surface(modifier = Modifier.fillMaxSize()) {
                     MainScreen()
                 }
             }
@@ -46,50 +33,48 @@ class MainActivity : ComponentActivity() {
 }
 
 @Composable
-fun MainScreen() {
-    val navItems = listOf(
-        NavItem("首页", Icons.Default.Home),
-        NavItem("预报", Icons.Default.LocationOn),
-        NavItem("城市", Icons.Default.Add),
-        NavItem("设置", Icons.Default.Settings)
+fun MainScreen() {  //页面总控制器
+    var selectedIndex by remember { mutableStateOf(0) } //记忆页面选择
+
+    val items = listOf(
+        "首页" to Icons.Default.Home,
+        "预报" to Icons.Default.List,
+        "城市" to Icons.Default.Place,
+        "设置" to Icons.Default.Settings
     )
 
-    var selectedIndex by remember { mutableIntStateOf(0) }
-
-    Scaffold(
-        bottomBar = {
-            NavigationBar {
-                navItems.forEachIndexed { index, item ->
-                    NavigationBarItem(
-                        selected = selectedIndex == index,
-                        onClick = { selectedIndex = index },
-                        icon = {
-                            Icon(item.icon, contentDescription = item.label)
-                        },
-                        label = {
-                            Text(item.label)
-                        }
+    var selectedLat by remember { mutableStateOf(39.9042) }//城市经纬度寄存
+    var selectedLon by remember { mutableStateOf(116.4074) }
+    //底部导航栏外观
+    Scaffold(//标准布局模板
+        bottomBar = {//底部栏
+            NavigationBar {//生成每一个导航项
+                items.forEachIndexed { index, item ->//对列表里的每一项，都执行一次大括号里的代码//之前定义的列表
+                    NavigationBarItem(//单个导航
+                        icon = { Icon(item.second, null) },//图表
+                        label = { Text(item.first) },//文字
+                        selected = selectedIndex == index,//是否选中
+                        onClick = { selectedIndex = index },//点击事件
+                        colors = NavigationBarItemDefaults.colors(//修改全局颜色
+                            selectedIconColor = AppState.themeColor.value,
+                            selectedTextColor = AppState.themeColor.value
+                        )
                     )
                 }
             }
         }
-    ) { innerPadding ->
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding)
-        ) {
+    ) { padding ->//防遮挡内边距
+        Box(modifier = Modifier.padding(padding)) {//上padding
             when (selectedIndex) {
-                0 -> HomeScreen()
-                1 -> ForecastScreen()
-                2 -> CityScreen()
-                3 -> SettingsScreen()
+                0 -> HomeScreen(selectedLat, selectedLon)// 1. 首页
+                1 -> ForecastScreen(selectedLat, selectedLon)  // 2. 预报
+                2 -> CityScreen { _, lat, lon ->               // 3. 城市
+                    selectedLat = lat
+                    selectedLon = lon
+                    selectedIndex = 0                          // 选完城市 → 自动跳回首页
+                }
+                3 -> SettingScreen()                           // 4. 设置
             }
         }
     }
 }
-
-data class NavItem(
-    val label: String,
-    val icon: ImageVector
-)
