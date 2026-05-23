@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowForward
 import androidx.compose.material.icons.filled.Build
@@ -18,6 +19,7 @@ import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.SystemUpdate
 import androidx.compose.material.icons.filled.Thermostat
+import androidx.compose.material3.Divider
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -34,19 +36,12 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import androidx.compose.runtime.collectAsState
-import androidx.lifecycle.viewmodel.compose.viewModel
-import androidx.navigation.NavController
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SettingsScreen(
-    settingsViewModel: SettingsViewModel = viewModel(),
-    navController: NavController
-) {
-    // 深色主题状态 - 从 ViewModel 获取
-    val isDarkTheme by settingsViewModel.isDarkTheme.collectAsState()
-    // 温度单位状态 - 暂时用本地状态（后面再改）
+fun SettingsScreen() {
+    // 状态管理
+    var isDarkTheme by remember { mutableStateOf(false) }
     var isCelsius by remember { mutableStateOf(true) }
 
     Scaffold(
@@ -75,9 +70,9 @@ fun SettingsScreen(
                 SettingsSwitchItem(
                     icon = Icons.Default.Palette,
                     title = "深色主题",
-                    subtitle = if (isDarkTheme) "当前：深色模式" else "当前：浅色模式",
+                    subtitle = "切换亮色/暗色模式",
                     checked = isDarkTheme,
-                    onCheckedChange = { settingsViewModel.setTheme(it) }
+                    onCheckedChange = { isDarkTheme = it }
                 )
             }
             item {
@@ -104,7 +99,7 @@ fun SettingsScreen(
                     icon = Icons.Default.Info,
                     title = "关于我们",
                     subtitle = "版本 1.0.0",
-                    onClick = { navController.navigate("about") }
+                    onClick = { /* 跳转关于页面 */ }
                 )
             }
             item {
@@ -120,7 +115,7 @@ fun SettingsScreen(
                     icon = Icons.Default.Build,
                     title = "帮助与反馈",
                     subtitle = "问题反馈和使用帮助",
-                    onClick = { navController.navigate("help") }
+                    onClick = { /* 跳转帮助页面 */ }
                 )
             }
 
