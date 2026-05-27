@@ -1,5 +1,6 @@
 package com.example.weatherol.ui.forecast
 
+import android.util.Log
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -8,10 +9,10 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.Text
+import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
@@ -19,49 +20,22 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.weatherol.AppState
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.ui.graphics.Color
+import com.example.weatherol.data.common.DataResult
+import com.example.weatherol.data.remote.model.WeatherResponse
+import com.example.weatherol.data.repository.WeatherRepository
 
-data class HourlyForecast(
-    val time: String,
-    val tempC: Double,
-    val iconRes: Int
-)
-
-data class DailyForecast(
-    val day: String,
-    val highTempC: Double,
-    val lowTempC: Double,
-    val iconRes: Int,
-    val weatherDesc: String
-)
-
+// 漂亮UI + 真实数据 完美融合版
 @Composable
-fun ForecastScreen() {
+fun ForecastScreen(lat: Double = 39.9042, lon: Double = 116.4074) {
+    val repo = remember { WeatherRepository() }
+    val state = remember { androidx.compose.runtime.mutableStateOf<DataResult<WeatherResponse>?>(null) }
     val isCelsius = AppState.isCelsius.value
 
-    val hourlyList = listOf(
-        HourlyForecast("现在", 26.0, android.R.drawable.ic_menu_compass),
-        HourlyForecast("14:00", 27.0, android.R.drawable.ic_menu_compass),
-        HourlyForecast("15:00", 28.0, android.R.drawable.ic_menu_compass),
-        HourlyForecast("16:00", 27.0, android.R.drawable.ic_menu_compass),
-        HourlyForecast("17:00", 25.0, android.R.drawable.ic_menu_compass),
-        HourlyForecast("18:00", 23.0, android.R.drawable.ic_menu_compass),
-        HourlyForecast("19:00", 22.0, android.R.drawable.ic_menu_compass),
-        HourlyForecast("20:00", 21.0, android.R.drawable.ic_menu_compass)
-    )
+    LaunchedEffect(lat, lon) {
+        state.value = repo.fetchWeather(lat, lon)
+    }
 
-    val dailyList = listOf(
-        DailyForecast("今天", 28.0, 22.0, android.R.drawable.ic_menu_compass, "晴"),
-        DailyForecast("周二", 27.0, 21.0, android.R.drawable.ic_menu_compass, "多云"),
-        DailyForecast("周三", 25.0, 20.0, android.R.drawable.ic_menu_compass, "小雨"),
-        DailyForecast("周四", 24.0, 19.0, android.R.drawable.ic_menu_compass, "阴"),
-        DailyForecast("周五", 26.0, 20.0, android.R.drawable.ic_menu_compass, "晴"),
-        DailyForecast("周六", 27.0, 21.0, android.R.drawable.ic_menu_compass, "晴转多云"),
-        DailyForecast("周日", 28.0, 22.0, android.R.drawable.ic_menu_compass, "晴")
-    )
-
-    // ====================== 自动跟随主题 ======================
+    // 主界面：完全保留你喜欢的漂亮样式
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -77,114 +51,134 @@ fun ForecastScreen() {
             modifier = Modifier.padding(bottom = 16.dp)
         )
 
-        HourlyForecastSection(hourlyList, isCelsius)
-        Spacer(modifier = Modifier.height(24.dp))
-        DailyForecastSection(dailyList, isCelsius)
-    }
-}
+        when (val current = state.value) {
+            is DataResult.Success -> {
+                val data = current.data
+                val hourly = data.hourly
+                val daily = data.daily
 
-@Composable
-fun HourlyForecastSection(hourlyList: List<HourlyForecast>, isCelsius: Boolean) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        elevation = CardDefaults.cardElevation(4.dp)
-    ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            Text(
-                text = "24小时预报",
-                fontSize = 16.sp,
-                fontWeight = FontWeight.SemiBold,
-                color = MaterialTheme.colorScheme.onSurface
-            )
-
-            LazyRow(
-                horizontalArrangement = Arrangement.spacedBy(16.dp),
-                modifier = Modifier.padding(top = 12.dp)
-            ) {
-                items(hourlyList) { forecast ->
-                    val tempF = forecast.tempC * 9 / 5 + 32
-                    val finalText = if (isCelsius) {
-                        "%.1f°C".format(forecast.tempC)
-                    } else {
-                        "%.1f°F".format(tempF)
-                    }
-
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
+                // =============== 24小时预报（真实数据 + 漂亮UI） ===============
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(16.dp),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                    elevation = CardDefaults.cardElevation(4.dp)
+                ) {
+                    Column(modifier = Modifier.padding(16.dp)) {
                         Text(
-                            text = forecast.time,
-                            fontSize = 14.sp,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Image(
-                            painter = painterResource(id = forecast.iconRes),
-                            contentDescription = null,
-                            modifier = Modifier.size(32.dp)
-                        )
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Text(
-                            text = finalText,
+                            "24小时预报",
                             fontSize = 16.sp,
-                            fontWeight = FontWeight.Medium,
+                            fontWeight = FontWeight.SemiBold,
                             color = MaterialTheme.colorScheme.onSurface
                         )
+
+                        val hList = mutableListOf<HourlyItem>()
+                        repeat(8) { i ->
+                            val t = hourly?.time?.getOrNull(i)?.takeLast(5) ?: ""
+                            val temp = hourly?.temperature2m?.getOrNull(i) ?: 0.0
+                            hList.add(HourlyItem(t, temp))
+                        }
+
+                        LazyRow(
+                            horizontalArrangement = Arrangement.spacedBy(16.dp),
+                            modifier = Modifier.padding(top = 12.dp)
+                        ) {
+                            items(hList) {
+                                val tempText = if (isCelsius) {
+                                    "%.1f°C".format(it.temp)
+                                } else {
+                                    "%.1f°F".format(it.temp * 9 / 5 + 32)
+                                }
+
+                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                    Text(it.time, fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                    Spacer(Modifier.height(8.dp))
+                                    Image(
+                                        painter = painterResource(android.R.drawable.ic_menu_compass),
+                                        contentDescription = null,
+                                        modifier = Modifier.size(32.dp)
+                                    )
+                                    Spacer(Modifier.height(8.dp))
+                                    Text(tempText, fontSize = 16.sp, fontWeight = FontWeight.Medium)
+                                }
+                            }
+                        }
+                    }
+                }
+
+                Spacer(Modifier.height(24.dp))
+
+                // =============== 7天预报（真实数据 + 漂亮UI） ===============
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(16.dp),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                    elevation = CardDefaults.cardElevation(4.dp)
+                ) {
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        Text(
+                            "7天预报",
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+
+                        Spacer(Modifier.height(12.dp))
+
+                        val dayNames = listOf("今天", "明天", "周三", "周四", "周五", "周六", "周日")
+                        dayNames.forEachIndexed { index, day ->
+                            val max = daily?.temperature2mMax?.getOrNull(index) ?: 0.0
+                            val min = daily?.temperature2mMin?.getOrNull(index) ?: 0.0
+
+                            val maxStr = if (isCelsius) "%.1f°C" else "%.1f°F"
+                            val minStr = if (isCelsius) "%.1f°C" else "%.1f°F"
+
+                            val maxText = maxStr.format(if (isCelsius) max else max * 9/5 +32)
+                            val minText = minStr.format(if (isCelsius) min else min * 9/5 +32)
+
+                            DailyForecastItem(
+                                day = day,
+                                desc = "晴", // 如需天气描述，可从API补充
+                                high = maxText,
+                                low = minText
+                            )
+
+                            if (index != dayNames.lastIndex) {
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .height(1.dp)
+                                        .background(MaterialTheme.colorScheme.outlineVariant)
+                                )
+                            }
+                        }
                     }
                 }
             }
-        }
-    }
-}
 
-@Composable
-fun DailyForecastSection(dailyList: List<DailyForecast>, isCelsius: Boolean) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        elevation = CardDefaults.cardElevation(4.dp)
-    ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            Text(
-                text = "7天预报",
-                fontSize = 16.sp,
-                fontWeight = FontWeight.SemiBold,
-                color = MaterialTheme.colorScheme.onSurface
-            )
+            is DataResult.Error -> {
+                Text(
+                    "加载失败: ${current.message}",
+                    color = Color.Red,
+                    modifier = Modifier.padding(16.dp)
+                )
+            }
 
-            Spacer(modifier = Modifier.height(12.dp))
-
-            dailyList.forEachIndexed { index, forecast ->
-                val highF = forecast.highTempC * 9 / 5 + 32
-                val lowF = forecast.lowTempC * 9 / 5 + 32
-
-                val highText = if (isCelsius) "%.1f°C" else "%.1f°F"
-                val lowText = if (isCelsius) "%.1f°C" else "%.1f°F"
-
-                val high = highText.format(if (isCelsius) forecast.highTempC else highF)
-                val low = lowText.format(if (isCelsius) forecast.lowTempC else lowF)
-
-                DailyForecastItem(day = forecast.day, desc = forecast.weatherDesc, high = high, low = low)
-
-                if (index != dailyList.lastIndex) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(1.dp)
-                            .background(MaterialTheme.colorScheme.outlineVariant)
-                            .padding(vertical = 8.dp)
-                    )
+            else -> {
+                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    CircularProgressIndicator(color = AppState.themeColor.value)
                 }
             }
         }
     }
 }
 
+// 内部数据类
+private data class HourlyItem(val time: String, val temp: Double)
+
+// 你原来的漂亮列表项（完全保留）
 @Composable
-fun DailyForecastItem(day: String, desc: String, high: String, low: String) {
+private fun DailyForecastItem(day: String, desc: String, high: String, low: String) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -208,7 +202,7 @@ fun DailyForecastItem(day: String, desc: String, high: String, low: String) {
                 contentDescription = null,
                 modifier = Modifier.size(24.dp)
             )
-            Spacer(modifier = Modifier.width(8.dp))
+            Spacer(Modifier.width(8.dp))
             Text(
                 text = desc,
                 fontSize = 14.sp,
@@ -222,7 +216,7 @@ fun DailyForecastItem(day: String, desc: String, high: String, low: String) {
                 fontWeight = FontWeight.Medium,
                 color = MaterialTheme.colorScheme.onSurface
             )
-            Spacer(modifier = Modifier.width(8.dp))
+            Spacer(Modifier.width(8.dp))
             Text(
                 text = low,
                 fontSize = 14.sp,
