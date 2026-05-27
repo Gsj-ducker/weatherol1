@@ -26,12 +26,10 @@ fun HomeScreen() {
     var weatherResult by remember { mutableStateOf<DataResult<WeatherResponse>?>(null) }
     val isCelsius by AppState.isCelsius
 
-    // 👇 从全局获取经纬度（切换城市自动变化）
     val lat = AppState.currentLat.value
     val lon = AppState.currentLon.value
     val cityName = AppState.currentCityName.value
 
-    // 👇 城市变化 → 自动重新请求天气
     LaunchedEffect(lat, lon) {
         weatherResult = weatherRepository.fetchWeather(lat, lon)
     }
@@ -50,7 +48,6 @@ fun HomeScreen() {
         ) {
             Icon(Icons.Default.LocationOn, null, tint = AppState.themeColor.value)
             Spacer(Modifier.width(6.dp))
-            // 👇 显示当前城市名
             Text("$cityName 天气", fontSize = 22.sp, fontWeight = FontWeight.Bold)
         }
 
@@ -89,7 +86,6 @@ fun HomeScreen() {
 
                 Spacer(Modifier.height(24.dp))
 
-                // 只保留真实的湿度
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.Center
@@ -104,9 +100,7 @@ fun HomeScreen() {
                 )
             }
             else -> {
-                CircularProgressIndicator(
-                    color = AppState.themeColor.value
-                )
+                CircularProgressIndicator(color = AppState.themeColor.value)
             }
         }
     }
@@ -114,8 +108,8 @@ fun HomeScreen() {
 
 fun getWeatherText(code: Int?): String {
     return when (code) {
-        0 -> "晴天"
-        1, 2, 3 -> "多云"
+        0, 1-> "晴天"
+        2, 3 -> "多云"
         45, 48 -> "雾"
         51, 53, 55 -> "小雨"
         61, 63, 65 -> "雨"
@@ -135,17 +129,9 @@ fun WeatherInfoCard(title: String, value: String) {
             verticalArrangement = Arrangement.Center,
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Text(
-                text = title,
-                color = Color.Gray,
-                fontSize = 14.sp
-            )
+            Text(text = title, color = Color.Gray, fontSize = 14.sp)
             Spacer(Modifier.height(6.dp))
-            Text(
-                text = value,
-                fontSize = 18.sp,
-                fontWeight = FontWeight.Bold
-            )
+            Text(text = value, fontSize = 18.sp, fontWeight = FontWeight.Bold)
         }
     }
 }
@@ -156,9 +142,7 @@ fun ActivityRecommendationCard(recommendation: ActivityRecommendation) {
         modifier = Modifier
             .fillMaxWidth()
             .padding(vertical = 8.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = Color(0xFFE8F0FE)
-        ),
+        colors = CardDefaults.cardColors(containerColor = Color(0xFFE8F0FE)),
         shape = MaterialTheme.shapes.medium
     ) {
         Column(

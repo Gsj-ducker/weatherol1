@@ -1,8 +1,8 @@
 package com.example.weatherol.data.remote.model
-//页面拿到这些类，就能拿到所有天气数据。
+
 import com.google.gson.annotations.SerializedName
 
-// 顶层响应
+// 顶层天气响应
 data class WeatherResponse(
     @SerializedName("current") val current: Current?,
     @SerializedName("hourly") val hourly: Hourly?,
@@ -11,19 +11,19 @@ data class WeatherResponse(
 
 // 当前天气
 data class Current(
-    @SerializedName("temperature_2m") val temperature2m: Double?,//把JSON里的temperature_2m装进Kotlin的temperature2m
+    @SerializedName("temperature_2m") val temperature2m: Double?,
     @SerializedName("weather_code") val weatherCode: Int?,
     @SerializedName("relative_humidity_2m") val relativeHumidity2m: Int?
 )
 
-// 逐小时
+// 24小时预报
 data class Hourly(
     @SerializedName("time") val time: List<String>?,
     @SerializedName("temperature_2m") val temperature2m: List<Double>?,
     @SerializedName("weather_code") val weatherCode: List<Int>?
 )
 
-// 逐日
+// 7天预报
 data class Daily(
     @SerializedName("time") val time: List<String>?,
     @SerializedName("weather_code") val weatherCode: List<Int>?,
