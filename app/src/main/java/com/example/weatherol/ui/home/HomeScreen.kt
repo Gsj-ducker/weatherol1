@@ -17,11 +17,8 @@ import com.example.weatherol.AppState
 import com.example.weatherol.data.common.DataResult
 import com.example.weatherol.data.remote.model.WeatherResponse
 import com.example.weatherol.data.repository.WeatherRepository
-import com.example.weatherol.utils.WeatherActivityHelper
 import com.example.weatherol.utils.ActivityRecommendation
-
-private const val BEIJING_LAT = 39.9042
-private const val BEIJING_LON = 116.4074
+import com.example.weatherol.utils.WeatherActivityHelper
 
 @Composable
 fun HomeScreen() {
@@ -29,8 +26,14 @@ fun HomeScreen() {
     var weatherResult by remember { mutableStateOf<DataResult<WeatherResponse>?>(null) }
     val isCelsius by AppState.isCelsius
 
-    LaunchedEffect(Unit) {
-        weatherResult = weatherRepository.fetchWeather(BEIJING_LAT, BEIJING_LON)
+    // 👇 从全局获取经纬度（切换城市自动变化）
+    val lat = AppState.currentLat.value
+    val lon = AppState.currentLon.value
+    val cityName = AppState.currentCityName.value
+
+    // 👇 城市变化 → 自动重新请求天气
+    LaunchedEffect(lat, lon) {
+        weatherResult = weatherRepository.fetchWeather(lat, lon)
     }
 
     Column(
@@ -47,7 +50,8 @@ fun HomeScreen() {
         ) {
             Icon(Icons.Default.LocationOn, null, tint = AppState.themeColor.value)
             Spacer(Modifier.width(6.dp))
-            Text("当前天气", fontSize = 22.sp, fontWeight = FontWeight.Bold)
+            // 👇 显示当前城市名
+            Text("$cityName 天气", fontSize = 22.sp, fontWeight = FontWeight.Bold)
         }
 
         Spacer(Modifier.height(30.dp))
@@ -176,13 +180,13 @@ fun ActivityRecommendationCard(recommendation: ActivityRecommendation) {
                 fontWeight = FontWeight.Bold,
                 color = Color(0xFF2980B9)
             )
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(Modifier.height(8.dp))
             Text(
                 text = recommendation.description,
                 fontSize = 16.sp,
                 color = Color(0xFF333333)
             )
-            Spacer(modifier = Modifier.height(6.dp))
+            Spacer(Modifier.height(6.dp))
             Text(
                 text = "💡 ${recommendation.tips}",
                 fontSize = 13.sp,
