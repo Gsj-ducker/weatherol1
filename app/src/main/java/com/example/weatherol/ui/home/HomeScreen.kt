@@ -1,5 +1,6 @@
 package com.example.weatherol.ui.home
 
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -9,6 +10,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -19,6 +21,8 @@ import com.example.weatherol.data.remote.model.WeatherResponse
 import com.example.weatherol.data.repository.WeatherRepository
 import com.example.weatherol.utils.ActivityRecommendation
 import com.example.weatherol.utils.WeatherActivityHelper
+import kotlinx.coroutines.delay
+import kotlin.random.Random
 
 @Composable
 fun HomeScreen() {
@@ -34,81 +38,133 @@ fun HomeScreen() {
         weatherResult = weatherRepository.fetchWeather(lat, lon)
     }
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .verticalScroll(rememberScrollState())
-            .padding(20.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Top
-    ) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.padding(top = 20.dp)
+    Box(modifier = Modifier.fillMaxSize()) {
+        // 极简全屏粒子（保证动、保证全屏）
+        SimpleParticleBackground()
+
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState())
+                .padding(20.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Top
         ) {
-            Icon(Icons.Default.LocationOn, null, tint = AppState.themeColor.value)
-            Spacer(Modifier.width(6.dp))
-            Text("$cityName 天气", fontSize = 22.sp, fontWeight = FontWeight.Bold)
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.padding(top = 20.dp)
+            ) {
+                Icon(Icons.Default.LocationOn, null, tint = AppState.themeColor.value)
+                Spacer(Modifier.width(6.dp))
+                Text("$cityName 天气", fontSize = 22.sp, fontWeight = FontWeight.Bold)
+            }
+
+            Spacer(Modifier.height(30.dp))
+
+            when (weatherResult) {
+                is DataResult.Success -> {
+                    val weather = (weatherResult as DataResult.Success<WeatherResponse>).data
+                    val current = weather.current
+
+                    val tempC = current?.temperature2m ?: 0.0
+                    val tempF = tempC * 9 / 5 + 32
+                    val displayTemp = if (isCelsius) {
+                        "%.1f°C".format(tempC)
+                    } else {
+                        "%.1f°F".format(tempF)
+                    }
+
+                    Text(
+                        text = displayTemp,
+                        fontSize = 64.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = AppState.themeColor.value
+                    )
+
+                    Spacer(Modifier.height(10.dp))
+                    Text(getWeatherText(current?.weatherCode), fontSize = 24.sp, color = Color.Gray)
+                    Spacer(Modifier.height(40.dp))
+
+                    val recommendation = WeatherActivityHelper.getRecommendation(
+                        current?.weatherCode,
+                        current?.temperature2m ?: 0.0
+                    )
+
+                    ActivityRecommendationCard(recommendation)
+
+                    Spacer(Modifier.height(24.dp))
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.Center
+                    ) {
+                        WeatherInfoCard(title = "湿度", value = "${current?.relativeHumidity2m}%")
+                    }
+                }
+                is DataResult.Error -> {
+                    Text(
+                        text = "加载失败: ${(weatherResult as DataResult.Error).message}",
+                        color = Color.Red
+                    )
+                }
+                else -> {
+                    CircularProgressIndicator(color = AppState.themeColor.value)
+                }
+            }
+        }
+    }
+}
+
+// ———— 核心：极简、全屏、必动粒子 ————
+@Composable
+fun SimpleParticleBackground() {
+    // 粒子数据
+    val particles = remember {
+        List(80) {
+            mutableStateOf(
+                Offset(
+                    x = Random.nextFloat() * 1000f,
+                    y = Random.nextFloat() * 2000f
+                ) to Random.nextFloat() * 2f + 1f // 速度
+            )
+        }
+    }
+
+    // 强制每16ms刷新一次（保证动画不停止）
+    var tick by remember { mutableStateOf(0) }
+    LaunchedEffect(Unit) {
+        while (true) {
+            delay(16)
+            tick++
+        }
+    }
+
+    Canvas(modifier = Modifier.fillMaxSize()) {
+        // 每次tick更新位置
+        particles.forEach { p ->
+            val (pos, speed) = p.value
+            p.value = pos.copy(y = pos.y + speed) to speed
+            // 超出屏幕顶部回到最上
+            if (pos.y > size.height) {
+                p.value = Offset(Random.nextFloat() * size.width, 0f) to speed
+            }
         }
 
-        Spacer(Modifier.height(30.dp))
-
-        when (weatherResult) {
-            is DataResult.Success -> {
-                val weather = (weatherResult as DataResult.Success<WeatherResponse>).data
-                val current = weather.current
-
-                val tempC = current?.temperature2m ?: 0.0
-                val tempF = tempC * 9 / 5 + 32
-                val displayTemp = if (isCelsius) {
-                    "%.1f°C".format(tempC)
-                } else {
-                    "%.1f°F".format(tempF)
-                }
-
-                Text(
-                    text = displayTemp,
-                    fontSize = 64.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = AppState.themeColor.value
-                )
-
-                Spacer(Modifier.height(10.dp))
-                Text(getWeatherText(current?.weatherCode), fontSize = 24.sp, color = Color.Gray)
-                Spacer(Modifier.height(40.dp))
-
-                val recommendation = WeatherActivityHelper.getRecommendation(
-                    current?.weatherCode,
-                    current?.temperature2m ?: 0.0
-                )
-
-                ActivityRecommendationCard(recommendation)
-
-                Spacer(Modifier.height(24.dp))
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.Center
-                ) {
-                    WeatherInfoCard(title = "湿度", value = "${current?.relativeHumidity2m}%")
-                }
-            }
-            is DataResult.Error -> {
-                Text(
-                    text = "加载失败: ${(weatherResult as DataResult.Error).message}",
-                    color = Color.Red
-                )
-            }
-            else -> {
-                CircularProgressIndicator(color = AppState.themeColor.value)
-            }
+        // 绘制所有粒子
+        particles.forEach { p ->
+            val (pos, _) = p.value
+            drawCircle(
+                color = AppState.themeColor.value.copy(alpha = 0.4f),
+                radius = 2.5f,
+                center = pos
+            )
         }
     }
 }
 
 fun getWeatherText(code: Int?): String {
     return when (code) {
-        0, 1-> "晴天"
+        0, 1 -> "晴天"
         2, 3 -> "多云"
         45, 48 -> "雾"
         51, 53, 55 -> "小雨"
